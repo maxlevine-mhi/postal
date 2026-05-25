@@ -114,6 +114,10 @@ This document contains all the environment variables which are available for thi
 | `OIDC_TOKEN_ENDPOINT` | String | The token endpoint on the authorization server (only used when discovery is false) |  |
 | `OIDC_USERINFO_ENDPOINT` | String | The user info endpoint on the authorization server (only used when discovery is false) |  |
 | `OIDC_JWKS_URI` | String | The JWKS endpoint on the authorization server (only used when discovery is false) |  |
+| `POSTAL_INITIAL_USER_EMAIL` | String | E-mail address for the user created or updated by `postal make-user`. When set, `make-user` runs non-interactively and upserts by e-mail (creates if absent, updates first/last name + password if present). All four `POSTAL_INITIAL_USER_*` variables must be set together. |  |
+| `POSTAL_INITIAL_USER_FIRST_NAME` | String | First name for the user created or updated by `postal make-user` (non-interactive mode; see `POSTAL_INITIAL_USER_EMAIL`). |  |
+| `POSTAL_INITIAL_USER_LAST_NAME` | String | Last name for the user created or updated by `postal make-user` (non-interactive mode; see `POSTAL_INITIAL_USER_EMAIL`). |  |
+| `POSTAL_INITIAL_USER_PASSWORD` | String | Password for the user created or updated by `postal make-user` (non-interactive mode; see `POSTAL_INITIAL_USER_EMAIL`). |  |
 | `POSTAL_BOOTSTRAP_ORG_NAME` | String | Organization name created (or matched) by `postal bootstrap-server`. The bootstrap command idempotently provisions an Organization, Server, and SMTP Credential from these `POSTAL_BOOTSTRAP_*` variables; all required vars must be set together. |  |
 | `POSTAL_BOOTSTRAP_SERVER_NAME` | String | Mail-server name created (or matched) inside the bootstrapped organization by `postal bootstrap-server`. |  |
 | `POSTAL_BOOTSTRAP_SMTP_CREDENTIAL_NAME` | String | Display name for the SMTP credential created by `postal bootstrap-server` (e.g. "Primary SMTP"). |  |
