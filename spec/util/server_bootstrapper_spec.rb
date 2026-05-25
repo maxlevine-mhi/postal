@@ -32,6 +32,10 @@ describe ServerBootstrapper do
 
       credential = server.credentials.find_by(name: "Primary SMTP")
       expect(credential.type).to eq("SMTP")
+      # Pin that the env-supplied key is persisted verbatim — Credential's
+      # `before_validation :generate_key` callback would otherwise overwrite
+      # it with a fresh SecureRandom value on every new record. The
+      # bootstrapper suppresses the callback via singleton-method override.
       expect(credential.key).to eq("abcdefghijklmnopqrstuvwx")
     end
 

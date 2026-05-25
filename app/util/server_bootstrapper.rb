@@ -140,6 +140,14 @@ module ServerBootstrapper
       end
 
       credential = server.credentials.new(type: "SMTP", name: name, key: key)
+      # Credential's `before_validation :generate_key` callback overwrites
+      # `self.key` with a fresh `SecureRandom.alphanumeric(24)` on every new
+      # (un-persisted) record, ignoring the value we passed in. Suppress it
+      # on just this record so the env-supplied key is what gets persisted.
+      # We do this with a singleton-method override rather than skipping
+      # callbacks globally so the rest of the model (validations etc.)
+      # still runs normally.
+      credential.define_singleton_method(:generate_key) { nil }
       save_or_die!(credential, label: "credential")
       puts " * credential \e[32m#{credential.name}\e[0m created (type=SMTP)"
       credential
