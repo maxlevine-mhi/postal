@@ -18,11 +18,12 @@ describe ServerBootstrapper do
   before { stub_const("ENV", ENV.to_hash.merge(env)) }
 
   describe ".start (happy path)" do
-    it "creates an organization, server and SMTP credential in one pass" do
+    it "creates an organization, server, SMTP credential, and wildcard domain in one pass" do
       expect { described_class.start }
         .to change(Organization, :count).by(1)
         .and change(Server, :count).by(1)
         .and change(Credential, :count).by(1)
+        .and change(Domain, :count).by(1)
 
       org = Organization.find_by(name: "Acme Charity")
       expect(org.owner).to eq(owner)
@@ -37,6 +38,17 @@ describe ServerBootstrapper do
       # it with a fresh SecureRandom value on every new record. The
       # bootstrapper suppresses the callback via singleton-method override.
       expect(credential.key).to eq("abcdefghijklmnopqrstuvwx")
+
+      # The wildcard domain is what stops Postal returning "530 From/Sender
+      # name is not valid" on every outbound message. `use_for_any` + a
+      # non-null `verified_at` together satisfy
+      # `Server#authenticated_domain_for_address` for any From-address.
+      # Pilot deploys should add a real Domain via the admin UI with real
+      # DNS records and remove this wildcard.
+      domain = server.domains.find_by(use_for_any: true)
+      expect(domain).not_to be_nil
+      expect(domain.verified_at).not_to be_nil
+      expect(domain.outgoing).to be(true)
     end
 
     it "honours POSTAL_BOOTSTRAP_SERVER_MODE=Live when set" do
@@ -51,7 +63,7 @@ describe ServerBootstrapper do
       described_class.start
       expect {
         described_class.start
-      }.not_to change { [Organization.count, Server.count, Credential.count] }
+      }.not_to change { [Organization.count, Server.count, Credential.count, Domain.count] }
     end
 
     it "leaves the existing credential key untouched and warns when the password env changes" do

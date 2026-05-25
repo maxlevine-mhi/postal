@@ -86,6 +86,20 @@ module ServerBootstrapper
       smtp_password = ENV.fetch("#{ENV_PREFIX}SMTP_PASSWORD")
       upsert_smtp_credential(server: server, name: credential_name, key: smtp_password)
 
+      # Postal rejects outbound mail whose From-domain isn't a verified
+      # Domain on the Server (530 "From/Sender name is not valid"). For a
+      # bootstrap-from-env demo we don't know in advance what domain
+      # callers will send from, so we register a wildcard `use_for_any`
+      # Domain that authenticates every From. This matches Postal's own
+      # "this server can send as anyone" idiom (Server#authenticated_domain_for_address).
+      #
+      # Mark verified_at so the domain is immediately usable —
+      # Domain.verified scope (lib/has_dns_checks.rb / scopes) treats
+      # unverified domains as not-yet-usable. Skip the dkim/spf/mx DNS
+      # checks because we're a Development-mode server; pilot deploys
+      # should add a real Domain via the admin UI with real DNS records.
+      upsert_wildcard_domain(server: server)
+
       puts "\e[32mPostal bootstrap complete\e[0m"
     end
 
@@ -151,6 +165,33 @@ module ServerBootstrapper
       save_or_die!(credential, label: "credential")
       puts " * credential \e[32m#{credential.name}\e[0m created (type=SMTP)"
       credential
+    end
+
+    WILDCARD_DOMAIN_NAME = "any.bootstrap.local"
+
+    def upsert_wildcard_domain(server:)
+      existing = server.domains.find_by(use_for_any: true)
+      if existing
+        puts " * wildcard domain \e[34m#{existing.name}\e[0m already exists (use_for_any=true)"
+        return existing
+      end
+
+      domain = server.domains.new(
+        name: WILDCARD_DOMAIN_NAME,
+        verification_method: "DNS",
+        verified_at: Time.now,
+        use_for_any: true,
+        outgoing: true,
+        incoming: false,
+        spf_status: "OK",
+        dkim_status: "OK",
+        mx_status: "OK",
+        return_path_status: "OK",
+        dns_checked_at: Time.now,
+      )
+      save_or_die!(domain, label: "wildcard domain")
+      puts " * wildcard domain \e[32m#{domain.name}\e[0m created (use_for_any=true, pre-verified)"
+      domain
     end
 
     def save_or_die!(record, label:)
